@@ -2,11 +2,17 @@
 
 ![Banner](./img/banner.png)
 
-this is a fork of the original: https://github.com/acouvreur/traefik-modsecurity-plugin
+this is a fork of a fork:
+  *  the original: https://github.com/acouvreur/traefik-modsecurity-plugin
+  *  the fork: https://github.com/madebymode/traefik-modsecurity-plugin
 
-This fork introduces alpine images, CRS 4.x suppport, a custom http.transport, and a 429 jail for repeat offenders
 
-see:  https://github.com/traefik/plugindemo#troubleshooting
+MxM fork: This fork introduces alpine images, CRS 4.x suppport, a custom http.transport, and a 429 jail for repeat offenders
+
+This fork:
+  * HTTP keep-alive to WAF server
+  * ignore WAF network failures
+  * remove dummy back-end from CRS (perf improvement)
 
 ----
 

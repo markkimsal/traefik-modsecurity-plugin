@@ -1,9 +1,9 @@
-displayName: MxM OWASP CRS Modsecurity Plugin
+displayName: OWASP CRS Modsecurity Plugin (nginx)
 type: middleware
 
-import: github.com/madebymode/traefik-modsecurity-plugin
+import: github.com/markkimsal/traefik-modsecurity-plugin
 
-summary: 'Traefik plugin to proxy requests through owasp/modsecurity-crs'
+summary: 'Traefik plugin to proxy requests through owasp/modsecurity-crs. Keep-alive and passthru WAF failures.'
 
 testData:
   ModsecurityUrl: http://waf:8080

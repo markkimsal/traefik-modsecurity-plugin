@@ -1,22 +1,21 @@
-version: "3.7"
-
+---
 services:
   traefik:
-    image: "traefik:v2.11.4"
+    image: "traefik"
     ports:
-      - "80:80"
-      - "8080:8080"
+      - "89:80"
+      - "8989:8080"
     command:
-      - "--log.level=DEBUG"
+      - "--log.level=ERROR"
       - "--accesslog=true"
       - --api.dashboard=true
       - --api.insecure=true
-      - --experimental.localPlugins.traefik-modsecurity-plugin.moduleName=github.com/madebymode/traefik-modsecurity-plugin
+      - --experimental.localPlugins.traefik-modsecurity-plugin.moduleName=github.com/markkimsal/traefik-modsecurity-plugin
       - --providers.docker=true
       - --entrypoints.http.address=:80
     volumes:
       - '/var/run/docker.sock:/var/run/docker.sock'
-      - '.:/plugins-local/src/github.com/madebymode/traefik-modsecurity-plugin'
+      - '.:/plugins-local/src/github.com/markkimsal/traefik-modsecurity-plugin'
     labels:
       - traefik.enable=true
       - traefik.http.services.traefik.loadbalancer.server.port=8080
@@ -24,29 +23,27 @@ services:
       - traefik.http.middlewares.limit.buffering.maxRequestBodyBytes=1048576
       - traefik.http.middlewares.waf.plugin.traefik-modsecurity-plugin.modSecurityUrl=http://waf:8080
       - traefik.http.middlewares.waf.plugin.traefik-modsecurity-plugin.jailEnabled=true
-
+      - traefik.http.middlewares.waf.plugin.traefik-modsecurity-plugin.badRequestsThresholdCount=8
 
 
   waf:
-    image: owasp/modsecurity-crs:4.3.0-apache-alpine-202406090906
+    image: owasp/modsecurity-crs:4.19.0-nginx-alpine-202510030310
+    volumes:
+      - './configs/default.conf.template:/etc/nginx/templates/conf.d/default.conf.template'
     environment:
+      - PORT=8080
       - PARANOIA=1
       - ANOMALY_INBOUND=10
       - ANOMALY_OUTBOUND=5
-      - BACKEND=http://dummy
+      - SSL_ENGINE=off
+      - CORS_HEADER_403_CONTENT_TYPE=text/html
       # New in CRS 4
       - REPORTING_LEVEL=2
-
       #######################################################
       # ModSecurity ENV Variables
       #######################################################
-
       - MODSEC_AUDIT_LOG_FORMAT=JSON
       - MODSEC_RULE_ENGINE=On
-
-
-  dummy:
-    image: traefik/whoami
 
   website-with-waf:
     image: traefik/whoami
