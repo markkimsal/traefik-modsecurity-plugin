@@ -7,6 +7,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
@@ -154,15 +155,21 @@ func (a *Modsecurity) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		http.Error(rw, "", http.StatusBadGateway)
 		return
 	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode >= 400 {
 		if resp.StatusCode == http.StatusForbidden && a.jailEnabled {
 			a.recordOffense(clientIP)
 		}
 		forwardResponse(resp, rw)
+		// discard and close to reuse connection
+		io.Copy(ioutil.Discard, resp.Body)
+		resp.Body.Close()
 		return
 	}
+
+	// discard and close to reuse connection (keep alive)
+	io.Copy(ioutil.Discard, resp.Body)
+	resp.Body.Close()
 
 	a.next.ServeHTTP(rw, req)
 }
