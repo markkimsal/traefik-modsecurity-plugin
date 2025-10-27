@@ -1,4 +1,8 @@
 ---
+
+x-crs-image: &crs-image
+  image: ${CRS_IMAGE:-owasp/modsecurity-crs:4.19.0-nginx-alpine-202510180710}
+
 services:
   traefik:
     image: "traefik"
@@ -27,12 +31,12 @@ services:
 
 
   waf:
-    image: owasp/modsecurity-crs:4.19.0-nginx-alpine-202510030310
+    <<: *crs-image
     volumes:
       - './configs/default.conf.template:/etc/nginx/templates/conf.d/default.conf.template'
     environment:
-      - PORT=8080
       - PARANOIA=1
+      - PORT=8080
       - ANOMALY_INBOUND=10
       - ANOMALY_OUTBOUND=5
       - SSL_ENGINE=off

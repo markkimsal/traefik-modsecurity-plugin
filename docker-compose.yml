@@ -1,5 +1,8 @@
 version: "3.7"
 
+x-crs-image: &crs-image
+  image: ${CRS_IMAGE:-owasp/modsecurity-crs:4.19.0-nginx-alpine-202510180710}
+
 services:
   traefik:
     image: traefik
@@ -26,12 +29,17 @@ services:
       - traefik.http.middlewares.waf.plugin.traefik-modsecurity-plugin.jailEnabled=true
 
   waf:
-    image: owasp/modsecurity-crs:4.3.0-apache-alpine-202406090906
+    <<: *crs-image
+    # TODO: use swarm / k8s configs or bake this file into your image
+    volumes:
+      - './configs/default.conf.template:/etc/nginx/templates/conf.d/default.conf.template'
     environment:
       - PARANOIA=1
+      - PORT=8080
       - ANOMALY_INBOUND=10
       - ANOMALY_OUTBOUND=5
-      - BACKEND=http://dummy
+      - SSL_ENGINE=off
+      - CORS_HEADER_403_CONTENT_TYPE=text/html
       # New in CRS 4
       - REPORTING_LEVEL=2
 
@@ -42,8 +50,6 @@ services:
       - MODSEC_AUDIT_LOG_FORMAT=JSON
       - MODSEC_RULE_ENGINE=On
 
-  dummy:
-    image: traefik/whoami
 
   website-with-waf:
     image: traefik/whoami
