@@ -24,6 +24,7 @@ type Config struct {
 	BadRequestsThresholdCount      int    `json:"badRequestsThresholdCount,omitempty"`
 	BadRequestsThresholdPeriodSecs int    `json:"badRequestsThresholdPeriodSecs,omitempty"` // Period in seconds to track attempts
 	JailTimeDurationSecs           int    `json:"jailTimeDurationSecs,omitempty"`                     // How long a client spends in Jail in seconds
+	FailOnWafConnectErrors         bool   `json:failOnWafConnectErrors,omitempty`
 }
 
 // CreateConfig creates the default plugin configuration.
@@ -34,6 +35,7 @@ func CreateConfig() *Config {
 		BadRequestsThresholdCount:      25,
 		BadRequestsThresholdPeriodSecs: 600,
 		JailTimeDurationSecs:           600,
+		FailOnWafConnectErrors:         false,
 	}
 }
 
@@ -45,6 +47,7 @@ type Modsecurity struct {
 	httpClient                     *http.Client
 	logger                         *log.Logger
 	jailEnabled                    bool
+	failOnWafConnectErrors         bool
 	badRequestsThresholdCount      int
 	badRequestsThresholdPeriodSecs int
 	jailTimeDurationSecs           int
@@ -96,6 +99,7 @@ func New(ctx context.Context, next http.Handler, config *Config, name string) (h
 		httpClient:                     &http.Client{Timeout: timeout, Transport: transport},
 		logger:                         log.New(os.Stdout, "", log.LstdFlags),
 		jailEnabled:                    config.JailEnabled,
+		failOnWafConnectErrors:         config.FailOnWafConnectErrors,
 		badRequestsThresholdCount:      config.BadRequestsThresholdCount,
 		badRequestsThresholdPeriodSecs: config.BadRequestsThresholdPeriodSecs,
 		jailTimeDurationSecs:           config.JailTimeDurationSecs,
@@ -148,11 +152,17 @@ func (a *Modsecurity) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	for h, val := range req.Header {
 		proxyReq.Header[h] = val
 	}
+	// Add client IP for logging
+	proxyReq.Header.Add("Forwarded-For", req.RemoteAddr)
 
 	resp, err := a.httpClient.Do(proxyReq)
 	if err != nil {
 		a.logger.Printf("fail to send HTTP request to modsec: %s", err.Error())
-		http.Error(rw, "", http.StatusBadGateway)
+		// since WAFs are mostly performative
+		// continue with client request if transient WAF failure
+		if (a.failOnWafConnectErrors == false) {
+			a.next.ServeHTTP(rw, req)
+		}
 		return
 	}
 
