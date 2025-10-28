@@ -17,6 +17,7 @@ server {
 	error_log /dev/fd/2 debug;
 	access_log /dev/fd/1;
 
+    error_page 405 =200 $uri;
     location / {
         client_max_body_size 0;
 
@@ -28,8 +29,8 @@ server {
 
 		#return 200;
 
-        root /etc/nginx;
-		try_files /nginx.conf =404;
+		root /usr/share/nginx/html;
+		try_files /index.html =404;
 
         #root /var/www/html;
         #index index.html index.htm README.md;
@@ -71,8 +72,8 @@ server {
 
         include includes/cors.conf;
 
-        root /etc/nginx;
-        try_files /nginx.conf =404;
+		root /usr/share/nginx/html;
+		try_files /index.html =404;
     }
 
     include includes/location_common.conf;
